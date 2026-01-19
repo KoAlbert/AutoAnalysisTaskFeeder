@@ -7,12 +7,20 @@
 
 ## 1. 文件資訊
 - 版本紀錄  
-  ❇️Version : Ver0.4  
+  ❇️Version : Ver0.6  
   ❇️Date : 2026/01/19  
   ❇️Author : Albert Ke
   > **修改紀錄**：
   > - Ver0.3 (2026/01/13): 根據 GUISpec.drawio 及 Layout.xml 實際 UI 設計更新規格書，修正控制項命名、列名、結構等細節
   > - Ver0.4 (2026/01/19): 新增資料夾多選功能，使用 Ookii.Dialogs.Wpf 套件支援；修正關鍵缺陷（Path/User 欄位、副本 INI、User Name 解析、MessageBox 反饋、確認對話框）
+  > - Ver0.5 (2026/01/19): 
+  >   1. 將 Complete 目錄內的 INI 檔名從 `NewAnalysis.ini` 改為 `CompleteAnalysis.ini`
+  >   2. 新增記憶上次選擇目錄及檔案的功能（使用 UserSettings 類別）
+  >   3. 改為只啟動一次 QKBqPCRAnalysis.exe，避免重複輸入管理員密碼
+  >   4. INI 檔案編碼改為 UTF-8（無 BOM）
+  > - Ver0.6 (2026/01/19):
+  >   1. 恢復原本的執行流程（每次任務完成後關閉並重新啟動 QKBqPCRAnalysis.exe）
+  >   2. **管理員權限優化**：應用程式本身以管理員權限啟動（透過 app.manifest），子程序繼承權限，整個批次過程只需輸入一次 UAC 密碼
 
 - 名詞定義及說明
   1. **AnalysisTask 目錄**  
@@ -25,12 +33,18 @@
       └─ New/
      ```
      - `New`：將 `NewAnalysis.ini` 放入此目錄後會觸發分析程式 `QKBqPCRAnalysis.exe` 對實驗資料進行分析。
-     - `Complete`：分析完成後，分析程式會將 `NewAnalysis.ini` 搬移至此目錄，約 3 分鐘後再移至 `History`。
+     - `Complete`：分析完成後，分析程式會將 INI 檔案重命名為 `CompleteAnalysis.ini` 並搬移至此目錄，約 3 分鐘後再移至 `History`。
      - `History`：用來記錄已完成的分析資料（本程式不使用此目錄，但需保留以符合外部程式行為）。
 
   2. **QKBqPCRAnalysis.exe**  
      實驗資料分析所需程式。路徑為 `TextBoxPCRAnalysisPath` 內所顯示的字串，可由 `btnPCRAnalysisPath` 選取後帶入，或由使用者自行輸入。  
      執行後（依外部程式行為）會清除 `New` 與 `Complete` 內檔案，並監控 `New` 目錄下是否出現新的 `NewAnalysis.ini`。
+     
+     **管理員權限優化**：
+     - 本應用程式透過 `app.manifest` 要求管理員權限啟動
+     - 啟動時會彈出一次 UAC 提示，使用者輸入管理員密碼後，本應用程式以管理員權限執行
+     - 當本應用程式啟動 QKBqPCRAnalysis.exe 時，子程序會自動繼承父程序的管理員權限
+     - **優點**：整個批次過程（即使啟動多次 QKBqPCRAnalysis.exe），使用者只需在開始時輸入一次管理員密碼
 
   3. **NewAnalysis.ini**（由本程式產生）  
      完整格式定義：
@@ -391,8 +405,8 @@ public enum TaskStatus
        - 記錄 Log `[INFO] 執行任務 {Item}/{TotalCount}: {FolderName}...`
        
        **4.2 啟動外部程式：**
-       - 呼叫 `Process.Start(PCRAnalysisExePath)` **以管理員權限**啟動 QKBqPCRAnalysis.exe（設定 `ProcessStartInfo.Verb = "runas"`）
-       - 若使用者拒絕 UAC 提示，記錄 ERROR Log，該任務標記為 Failed，繼續下一筆
+       - 呼叫 `Process.Start(PCRAnalysisExePath)` 啟動 QKBqPCRAnalysis.exe
+       - **管理員權限說明**：因本應用程式已以管理員權限執行，子程序會自動繼承權限，不會彈出 UAC 提示
        - 檢查程式啟動是否成功（若異常，記錄 ERROR Log，該任務標記為 Failed，繼續下一筆）
        - 記錄進程 ID 至 ProcessId
        - 記錄 Log `[INFO] 已啟動 QKBqPCRAnalysis.exe (PID={ProcessId})`
@@ -407,7 +421,7 @@ public enum TaskStatus
        
        **4.4 監控完成：**
        - 進入監控迴圈：每 500ms 檢查一次
-         - **主要監控**：檢查 `AnalysisTaskPath\Complete\NewAnalysis.ini` 是否存在
+         - **主要監控**：檢查 `AnalysisTaskPath\Complete\CompleteAnalysis.ini` 是否存在
            - 檔案完成判定：檔案存在 + 修改時間戳連續 1 秒無變化（表示寫入完成）
          - **次要監控**：檢查 Process 狀態（根據 LabVIEW State Machine 特性）
            - 若 `Process.HasExited = true`：檢查 ExitCode
@@ -436,6 +450,8 @@ public enum TaskStatus
        - **重要**：QKBqPCRAnalysis.exe 完成分析後不會自動退出，必須手動終止
        - 呼叫 `Process.Kill()` 強制終止 QKBqPCRAnalysis.exe 程序
        - 若程序已意外結束（HasExited=true），跳過此步驟
+       - 記錄 Log `[INFO] 已關閉 QKBqPCRAnalysis.exe`
+       - **繼續下一筆任務**（重複步驟 4.1-4.5）
        - 等待程序完全終止（最多 5 秒），若仍未終止則記錄 ERROR
        - 記錄 Log `[INFO] 已關閉 QKBqPCRAnalysis.exe`
        - **清理 New/Complete 目錄**（可選，建議由外部程式負責）：若 Complete 內存在 NewAnalysis.ini，可選擇刪除或保留，此項由設計決定
@@ -604,14 +620,34 @@ public enum TaskStatus
 
 ## 9. 檔案/路徑與外部程式（最小必要）
 
-### 9.1 AnalysisTaskPath（分析工作目錄）
+### 9.1 使用者設定記憶功能（UserSettings）
+
+**功能說明**：自動記憶並恢復使用者上次選擇的目錄和檔案路徑，提升使用體驗。
+
+- **設定檔案位置**：`%LocalAppData%\AutoAnalysisTaskFeeder\user_settings.json`
+- **儲存內容**：
+  - `LastAnalysisTaskPath`：上次選擇的 AnalysisTask 目錄
+  - `LastPcrAnalysisExePath`：上次選擇的 QKBqPCRAnalysis.exe 檔案路徑
+  - `LastExperimentDataPath`：上次選擇實驗資料目錄的父目錄
+- **儲存格式**：JSON（UTF-8，人類可讀）
+- **載入時機**：應用程式啟動時自動載入
+- **儲存時機**：
+  - 選擇 AnalysisTask 目錄後立即儲存
+  - 選擇 QKBqPCRAnalysis.exe 檔案後立即儲存
+  - 選擇實驗資料目錄後立即儲存
+- **恢復行為**：
+  - 啟動時自動填入 `TextBoxAnalysisTaskPath` 和 `TextBoxPCRAnalysisPath`
+  - 開啟資料夾選擇對話框時，自動定位到上次選擇的目錄
+- **錯誤處理**：若設定檔案讀取失敗或路徑不存在，使用空白預設值
+
+### 9.2 AnalysisTaskPath（分析工作目錄）
 
 - **路徑位置**：由 `TextBoxAnalysisTaskPath` 指定；可由 `btnAnalysisTaskPath` 選取或手動輸入
 - **目錄結構**（必須）：
   ```text
   AnalysisTask/
   ├─ New/        （放入 NewAnalysis.ini 供外部程式讀取）
-  ├─ Complete/   （外部程式將完成的 INI 移至此）
+  ├─ Complete/   （外部程式將完成的 INI 重命名為 CompleteAnalysis.ini 並移至此）
   └─ History/    （外部程式將 Complete 內的 INI 進一步移至此，本程式不使用）
   ```
 - **外部程式行為：**
@@ -636,13 +672,16 @@ public enum TaskStatus
 - **預期檔案**：`QKBqPCRAnalysis.exe`（或相容的可執行檔）
 - **程式行為特性**：
   - 啟動時會自動清空 AnalysisTaskPath 下所有子目錄的 ini 檔案
-  - **不會自動退出**：完成分析並將 INI 移至 Complete 後，程式會持續運行，需由本程式手動終止進程
+  - **不會自動退出**：完成分析並將 INI 重命名為 CompleteAnalysis.ini 移至 Complete 後，程式會持續運行
+  - **每次任務都需要重新啟動**：每個任務完成後需要關閉並重新啟動程式（原始設計流程）
   - 基於 LabVIEW State Machine 架構，發生錯誤時會立即停止（ExitCode ≠ 0）
 - **檔案操作**：
-  - 本程式呼叫 `Process.Start(PCRAnalysisExePath)` **以管理員權限**啟動程式（設定 `ProcessStartInfo.Verb = "runas"`）
+  - 本程式呼叫 `Process.Start(PCRAnalysisExePath)` 啟動程式
+  - **管理員權限處理**：本應用程式透過 app.manifest 要求管理員權限，子程序自動繼承權限
+  - **優點**：整個批次過程（即使每次任務都重新啟動程式），使用者只需在應用程式啟動時輸入一次管理員密碼
   - 程式啟動後將自動監控 `AnalysisTask\New\` 目錄，並在新檔案出現時執行分析
-  - 分析完成後將 INI 檔案移至 `Complete/`，約 3 分鐘後再移至 `History/`
-  - **本程式必須在偵測到 Complete 有檔案後，立即呼叫 Process.Kill() 終止程式**
+  - 分析完成後將 INI 檔案重命名為 `CompleteAnalysis.ini` 並移至 `Complete/`，約 3 分鐘後再移至 `History/`
+  - **本程式必須在偵測到 Complete 有檔案後，立即呼叫 Process.Kill() 終止程式，並在下一筆任務時重新啟動**
 - **權限需求**：讀取 + 執行 + **管理員權限**（UAC 提示）
 - **路徑支援**：同 AnalysisTaskPath
 

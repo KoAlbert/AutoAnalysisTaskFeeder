@@ -9,10 +9,11 @@
     <UseWindowsForms>true</UseWindowsForms>
     <AssemblyName>AutoAnalysisTaskFeeder</AssemblyName>
     <RootNamespace>AutoAnalysisTaskFeeder</RootNamespace>
-    <Version>0.4.0</Version>
+    <Version>0.5.0</Version>
     <Authors>Albert Ke</Authors>
     <Description>自動化解析實驗資料並啟動分析程式的 WPF 應用程式</Description>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
   </PropertyGroup>
 
   <ItemGroup>

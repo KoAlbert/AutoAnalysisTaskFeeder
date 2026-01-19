@@ -51,8 +51,8 @@ namespace AutoAnalysisTaskFeeder.Services
                 if (!Directory.Exists(directory))
                     Directory.CreateDirectory(directory);
 
-                // 使用 UTF-8 編碼寫入
-                File.WriteAllText(filePath, content, Encoding.UTF8);
+                // 使用 UTF-8 編碼寫入（無 BOM）
+                File.WriteAllText(filePath, content, new UTF8Encoding(false));
             }
             catch (Exception ex)
             {

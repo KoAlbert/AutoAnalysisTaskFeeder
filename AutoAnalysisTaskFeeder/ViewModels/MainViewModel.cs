@@ -20,6 +20,8 @@ namespace AutoAnalysisTaskFeeder.ViewModels
         private readonly IProcessRunner _processRunner;
         private readonly ILogService _logService;
         private readonly SemaphoreSlim _executionLock = new(1, 1);
+        private readonly UserSettings _userSettings;
+        private CancellationTokenSource? _cancellationTokenSource;
 
         // Properties
         private ObservableCollection<TaskItem> _tasks = new();
@@ -85,10 +87,20 @@ namespace AutoAnalysisTaskFeeder.ViewModels
             set => SetProperty(ref _logText, value);
         }
 
+        private bool _isAnalysisRunning;
+        public bool IsAnalysisRunning
+        {
+            get => _isAnalysisRunning;
+            set => SetProperty(ref _isAnalysisRunning, value);
+        }
+
+        private int _currentRunningProcessId = -1;
+
         // Commands
         public ICommand SelectFolderCommand { get; }
         public ICommand GenerateIniCommand { get; }
         public ICommand StartAnalysisCommand { get; }
+        public ICommand StopAnalysisCommand { get; }
         public ICommand SelectAnalysisTaskPathCommand { get; }
         public ICommand SelectPcrAnalysisPathCommand { get; }
 
@@ -103,18 +115,24 @@ namespace AutoAnalysisTaskFeeder.ViewModels
             _processRunner = processRunner ?? throw new ArgumentNullException(nameof(processRunner));
             _logService = logService ?? throw new ArgumentNullException(nameof(logService));
 
-            // �q�\��x�ܧ�ƥ�
+            // 載入使用者設定
+            _userSettings = UserSettings.Load();
+            AnalysisTaskPath = _userSettings.LastAnalysisTaskPath;
+            PcrAnalysisExePath = _userSettings.LastPcrAnalysisExePath;
+
+            // 訂閱日誌變更事件
             _logService.LogChanged += OnLogChanged;
 
             // Setup commands
             SelectFolderCommand = new AsyncRelayCommand(OnSelectFolder);
             GenerateIniCommand = new AsyncRelayCommand(OnGenerateIni);
             StartAnalysisCommand = new AsyncRelayCommand(OnStartAnalysis);
+            StopAnalysisCommand = new RelayCommand(OnStopAnalysis);
             SelectAnalysisTaskPathCommand = new RelayCommand(OnSelectAnalysisTaskPath);
             SelectPcrAnalysisPathCommand = new RelayCommand(OnSelectPcrAnalysisPath);
 
-            // ��l�Ƥ�x
-            _logService.LogInfo("���ε{���w�Ұ�");
+            // 初始化日誌
+            _logService.LogInfo("應用程式已就緒");
         }
 
         private void OnLogChanged(string newLog)
@@ -188,6 +206,13 @@ namespace AutoAnalysisTaskFeeder.ViewModels
                     Multiselect = true
                 };
 
+                // 設定初始目錄為上次選擇的路徑
+                if (!string.IsNullOrEmpty(_userSettings.LastExperimentDataPath) && 
+                    Directory.Exists(_userSettings.LastExperimentDataPath))
+                {
+                    dialog.SelectedPath = _userSettings.LastExperimentDataPath;
+                }
+
                 var result = dialog.ShowDialog();
                 if (result != true || dialog.SelectedPaths == null || dialog.SelectedPaths.Length == 0)
                 {
@@ -197,6 +222,17 @@ namespace AutoAnalysisTaskFeeder.ViewModels
 
                 var selectedFolders = dialog.SelectedPaths;
                 _logService.LogInfo($"已選取 {selectedFolders.Length} 個資料夾");
+
+                // 儲存上次選擇的目錄
+                if (selectedFolders.Length > 0)
+                {
+                    var parentPath = Path.GetDirectoryName(selectedFolders[0]);
+                    if (!string.IsNullOrEmpty(parentPath))
+                    {
+                        _userSettings.LastExperimentDataPath = parentPath;
+                        _userSettings.Save();
+                    }
+                }
 
                 Tasks.Clear();
                 TotalCount = 0;
@@ -357,8 +393,10 @@ namespace AutoAnalysisTaskFeeder.ViewModels
             try
             {
                 IsBusy = true;
+                IsAnalysisRunning = true;
                 StatusMessage = "Starting analysis...";
                 ProcessedCount = 0;
+                ProgressValue = 0; // *** 修正：歸零進度條 ***
 
                 var tasksToRun = Tasks.Where(t => t.Status == TaskStatusEnum.IniGenerated).ToList();
 
@@ -372,18 +410,33 @@ namespace AutoAnalysisTaskFeeder.ViewModels
                     return;
                 }
 
+                // 建立 CancellationTokenSource
+                _cancellationTokenSource = new CancellationTokenSource();
+                var cancellationToken = _cancellationTokenSource.Token;
+
                 int successCount = 0;
                 int failCount = 0;
                 var startTime = DateTime.Now;
 
+                _logService.LogInfo($"開始分析流程，共 {tasksToRun.Count} 個任務");
+
                 foreach (var task in tasksToRun)
                 {
+                    // 檢查是否已取消
+                    if (cancellationToken.IsCancellationRequested)
+                    {
+                        _logService.LogInfo("使用者已取消分析");
+                        task.Status = TaskStatusEnum.Failed;
+                        task.ErrorMessage = "使用者取消";
+                        break;
+                    }
+
                     try
                     {
                         task.Status = TaskStatusEnum.Running;
                         _logService.LogInfo($"執行任務 {task.Item}/{TotalCount}: {task.FolderName}...");
 
-                        // 啟動外部程式
+                        // 啟動外部程式（繼承父程序的管理員權限）
                         var processId = _processRunner.StartProcess(PcrAnalysisExePath);
                         if (processId < 0)
                         {
@@ -395,10 +448,11 @@ namespace AutoAnalysisTaskFeeder.ViewModels
                         }
 
                         task.ProcessId = processId;
+                        _currentRunningProcessId = processId; // 記錄當前運行的程式ID
                         _logService.LogInfo($"已啟動 QKBqPCRAnalysis.exe (PID={processId})");
 
                         // 等待 2 秒讓外部程式完成初始化和目錄清空動作
-                        await Task.Delay(2000);
+                        await Task.Delay(2000, cancellationToken);
                         _logService.LogInfo("外部程式就緒，目錄已清空");
 
                         // 投遞 INI 檔案（從實驗資料夾副本複製至 AnalysisTask\New）
@@ -411,6 +465,7 @@ namespace AutoAnalysisTaskFeeder.ViewModels
                             task.ErrorMessage = "INI 副本不存在";
                             _logService.LogError($"INI 副本不存在: {sourcePath}");
                             _processRunner.KillProcess(processId);
+                            _currentRunningProcessId = -1;
                             failCount++;
                             continue;
                         }
@@ -422,7 +477,24 @@ namespace AutoAnalysisTaskFeeder.ViewModels
                         var completeDir = Path.Combine(AnalysisTaskPath, "Complete");
                         var completed = await _processRunner.MonitorCompletionAsync(
                             completeDir,
-                            900); // 15 minutes timeout
+                            900,
+                            null,
+                            cancellationToken); // 傳遞 cancellationToken
+
+                        // 檢查是否已取消
+                        if (cancellationToken.IsCancellationRequested)
+                        {
+                            _logService.LogInfo("使用者已取消分析，正在清理...");
+                            if (_processRunner.IsProcessRunning(processId))
+                            {
+                                _processRunner.KillProcess(processId);
+                                _logService.LogInfo("已關閉 QKBqPCRAnalysis.exe");
+                            }
+                            _currentRunningProcessId = -1;
+                            task.Status = TaskStatusEnum.Failed;
+                            task.ErrorMessage = "使用者取消";
+                            break;
+                        }
 
                         if (completed)
                         {
@@ -447,6 +519,22 @@ namespace AutoAnalysisTaskFeeder.ViewModels
                             _processRunner.KillProcess(processId);
                             _logService.LogInfo("已關閉 QKBqPCRAnalysis.exe");
                         }
+                        _currentRunningProcessId = -1;
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        // 使用者取消操作
+                        _logService.LogInfo("使用者已取消分析");
+                        task.Status = TaskStatusEnum.Failed;
+                        task.ErrorMessage = "使用者取消";
+                        
+                        if (_currentRunningProcessId > 0 && _processRunner.IsProcessRunning(_currentRunningProcessId))
+                        {
+                            _processRunner.KillProcess(_currentRunningProcessId);
+                            _logService.LogInfo("已關閉 QKBqPCRAnalysis.exe");
+                        }
+                        _currentRunningProcessId = -1;
+                        break;
                     }
                     catch (Exception ex)
                     {
@@ -454,19 +542,43 @@ namespace AutoAnalysisTaskFeeder.ViewModels
                         task.ErrorMessage = ex.Message;
                         _logService.LogError($"Analysis failed for {task.FolderName}: {ex.Message}");
                         failCount++;
+                        
+                        if (_currentRunningProcessId > 0 && _processRunner.IsProcessRunning(_currentRunningProcessId))
+                        {
+                            _processRunner.KillProcess(_currentRunningProcessId);
+                        }
+                        _currentRunningProcessId = -1;
                     }
 
                     ProgressValue = ((successCount + failCount) * 100.0) / tasksToRun.Count;
                 }
 
                 var totalElapsed = (DateTime.Now - startTime).TotalSeconds;
-                _logService.LogInfo($"分析流程完畢: 成功 {successCount}，失敗 {failCount}，耗時 {totalElapsed:F1}s");
+                
+                // 檢查是否因為取消而結束
+                bool wasCancelled = cancellationToken.IsCancellationRequested;
+                
+                if (wasCancelled)
+                {
+                    _logService.LogInfo($"分析已取消: 成功 {successCount}，失敗/取消 {failCount}，耗時 {totalElapsed:F1}s");
+                    StatusMessage = "Cancelled";
+                }
+                else
+                {
+                    _logService.LogInfo($"分析流程完畢: 成功 {successCount}，失敗 {failCount}，耗時 {totalElapsed:F1}s");
+                }
 
                 // 顯示摘要 MessageBox
                 string message;
                 System.Windows.MessageBoxImage icon;
                 
-                if (failCount == 0)
+                if (wasCancelled)
+                {
+                    message = $"分析已取消。已完成: {successCount}，失敗/取消: {failCount}。";
+                    icon = System.Windows.MessageBoxImage.Warning;
+                    StatusMessage = "Cancelled";
+                }
+                else if (failCount == 0)
                 {
                     message = $"已完成分析 {successCount} 筆任務";
                     icon = System.Windows.MessageBoxImage.Information;
@@ -487,14 +599,51 @@ namespace AutoAnalysisTaskFeeder.ViewModels
 
                 System.Windows.MessageBox.Show(
                     message,
-                    "分析完成",
+                    wasCancelled ? "分析已取消" : "分析完成",
                     System.Windows.MessageBoxButton.OK,
                     icon);
+            }
+            catch (Exception ex)
+            {
+                _logService.LogError($"分析過程發生錯誤: {ex.Message}");
+                
+                // 確保清理資源
+                if (_currentRunningProcessId > 0 && _processRunner.IsProcessRunning(_currentRunningProcessId))
+                {
+                    _processRunner.KillProcess(_currentRunningProcessId);
+                    _logService.LogInfo("已關閉 QKBqPCRAnalysis.exe");
+                }
+                _currentRunningProcessId = -1;
+                
+                throw;
             }
             finally
             {
                 IsBusy = false;
+                IsAnalysisRunning = false;
+                _currentRunningProcessId = -1;
+                _cancellationTokenSource?.Dispose();
+                _cancellationTokenSource = null;
                 _executionLock.Release();
+            }
+        }
+
+        private void OnStopAnalysis()
+        {
+            if (_cancellationTokenSource != null && !_cancellationTokenSource.IsCancellationRequested)
+            {
+                var result = System.Windows.MessageBox.Show(
+                    "確定要停止分析嗎？正在執行的任務將被中斷。",
+                    "停止分析",
+                    System.Windows.MessageBoxButton.YesNo,
+                    System.Windows.MessageBoxImage.Question);
+
+                if (result == System.Windows.MessageBoxResult.Yes)
+                {
+                    _logService.LogInfo("使用者請求停止分析");
+                    _cancellationTokenSource.Cancel();
+                    StatusMessage = "Stopping...";
+                }
             }
         }
 
@@ -518,6 +667,10 @@ namespace AutoAnalysisTaskFeeder.ViewModels
             {
                 AnalysisTaskPath = dialog.SelectedPath;
                 _logService.LogInfo($"已設定 AnalysisTask 路徑: {AnalysisTaskPath}");
+                
+                // 儲存設定
+                _userSettings.LastAnalysisTaskPath = AnalysisTaskPath;
+                _userSettings.Save();
             }
             else
             {
@@ -547,6 +700,10 @@ namespace AutoAnalysisTaskFeeder.ViewModels
             {
                 PcrAnalysisExePath = dialog.FileName;
                 _logService.LogInfo($"已設定 PCR 分析程式路徑: {PcrAnalysisExePath}");
+                
+                // 儲存設定
+                _userSettings.LastPcrAnalysisExePath = PcrAnalysisExePath;
+                _userSettings.Save();
             }
             else
             {

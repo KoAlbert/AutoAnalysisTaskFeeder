@@ -14,7 +14,7 @@ namespace AutoAnalysisTaskFeeder.Services
         private Process _currentProcess;
 
         /// <summary>
-        /// 啟動外部程式（以管理員權限執行）
+        /// 啟動外部程式（繼承父程序的管理員權限）
         /// </summary>
         public int StartProcess(string exePath)
         {
@@ -29,8 +29,7 @@ namespace AutoAnalysisTaskFeeder.Services
                 var startInfo = new ProcessStartInfo
                 {
                     FileName = exePath,
-                    UseShellExecute = true,
-                    Verb = "runas" // 以管理員身份執行
+                    UseShellExecute = false // 改為 false 以繼承父程序權限
                 };
 
                 _currentProcess = Process.Start(startInfo);
@@ -63,7 +62,7 @@ namespace AutoAnalysisTaskFeeder.Services
 
         /// <summary>
         /// 非同步監控檔案完成
-        /// 輪詢檢查 completeDir 中是否出現 NewAnalysis.ini
+        /// 輪詢檢查 completeDir 中是否出現 CompleteAnalysis.ini
         /// </summary>
         public async Task<bool> MonitorCompletionAsync(
             string completeDir,
@@ -77,7 +76,7 @@ namespace AutoAnalysisTaskFeeder.Services
             if (!Directory.Exists(completeDir))
                 throw new DirectoryNotFoundException($"目錄不存在: {completeDir}");
 
-            string targetFile = Path.Combine(completeDir, "NewAnalysis.ini");
+            string targetFile = Path.Combine(completeDir, "CompleteAnalysis.ini");
             int elapsedSeconds = 0;
             int pollIntervalMs = 500;
             int maxPolls = (timeoutSeconds * 1000) / pollIntervalMs;
