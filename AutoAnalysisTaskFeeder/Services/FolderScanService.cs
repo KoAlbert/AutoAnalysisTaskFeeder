@@ -82,7 +82,8 @@ namespace AutoAnalysisTaskFeeder.Services
 
             var task = new TaskItem
             {
-                FolderName = Path.GetFileName(folderPath)
+                FolderName = Path.GetFileName(folderPath),
+                FolderPath = folderPath
             };
 
             // 掃描 JSON 檔案
@@ -170,6 +171,17 @@ namespace AutoAnalysisTaskFeeder.Services
                     else
                     {
                         task.SoftwareVersion = "N/A";
+                    }
+
+                    // 解析 User Name
+                    if (root.TryGetProperty("User Name", out var userName))
+                    {
+                        task.UserName = userName.GetString() ?? "Unknown";
+                    }
+                    else
+                    {
+                        task.UserName = "Unknown";
+                        _logService.LogWarn("無法讀取 User Name，使用預設值 'Unknown'");
                     }
 
                     // 解析 Filter Selection

@@ -26,8 +26,8 @@ namespace AutoAnalysisTaskFeeder.Services
             sb.AppendLine($"TotalCycle={task.TotalCycle}");
             sb.AppendLine("Flag=0");
             sb.AppendLine($"TotalChip={task.TotalChip}");
-            sb.AppendLine($"Path={task.FolderName}");
-            sb.AppendLine($"User={GetSafeString(task.Machine)}");
+            sb.AppendLine($"Path={task.FolderPath}");
+            sb.AppendLine($"User={GetSafeString(task.UserName)}");
             sb.AppendLine($"Filter={GetSafeString(task.Filter)}");
 
             return sb.ToString();

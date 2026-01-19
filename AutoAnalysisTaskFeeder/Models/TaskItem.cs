@@ -11,9 +11,11 @@ namespace AutoAnalysisTaskFeeder.Models
     {
         private int _item;
         private string _folderName;
+        private string _folderPath;
         private string _machine;
         private string _app;
         private string _softwareVersion;
+        private string _userName;
         private int _totalCycle;
         private int _totalChip;
         private string _filter;
@@ -44,6 +46,13 @@ namespace AutoAnalysisTaskFeeder.Models
             set => SetProperty(ref _folderName, value);
         }
 
+        /// <summary>實驗資料夾完整路徑</summary>
+        public string FolderPath
+        {
+            get => _folderPath;
+            set => SetProperty(ref _folderPath, value);
+        }
+
         /// <summary>機器代碼</summary>
         public string Machine
         {
@@ -63,6 +72,13 @@ namespace AutoAnalysisTaskFeeder.Models
         {
             get => _softwareVersion;
             set => SetProperty(ref _softwareVersion, value);
+        }
+
+        /// <summary>使用者名稱</summary>
+        public string UserName
+        {
+            get => _userName;
+            set => SetProperty(ref _userName, value);
         }
 
         /// <summary>總循環數</summary>

@@ -18,3 +18,4 @@ E:\QuarkBio\JobData\21_AutoAnalysisTaskFeeder\AutoAnalysisTaskFeeder\obj\Debug\n
 E:\QuarkBio\JobData\21_AutoAnalysisTaskFeeder\AutoAnalysisTaskFeeder\obj\Debug\net8.0-windows\AutoAnalysisTaskFeeder.pdb
 E:\QuarkBio\JobData\21_AutoAnalysisTaskFeeder\AutoAnalysisTaskFeeder\obj\Debug\net8.0-windows\AutoAnalysisTaskFeeder.genruntimeconfig.cache
 E:\QuarkBio\JobData\21_AutoAnalysisTaskFeeder\AutoAnalysisTaskFeeder\obj\Debug\net8.0-windows\ref\AutoAnalysisTaskFeeder.dll
+E:\QuarkBio\JobData\21_AutoAnalysisTaskFeeder\AutoAnalysisTaskFeeder\obj\Debug\net8.0-windows\AutoAnalysisTaskFeeder.sourcelink.json
