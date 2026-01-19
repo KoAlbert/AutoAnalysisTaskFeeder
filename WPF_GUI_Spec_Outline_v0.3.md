@@ -7,10 +7,12 @@
 
 ## 1. 文件資訊
 - 版本紀錄  
-  ❇️Version : Ver0.3  
-  ❇️Date : 2026/01/13  
+  ❇️Version : Ver0.4  
+  ❇️Date : 2026/01/19  
   ❇️Author : Albert Ke
-  > **修改紀錄**：根據 GUISpec.drawio 及 Layout.xml 實際 UI 設計更新規格書，修正控制項命名、列名、結構等細節。
+  > **修改紀錄**：
+  > - Ver0.3 (2026/01/13): 根據 GUISpec.drawio 及 Layout.xml 實際 UI 設計更新規格書，修正控制項命名、列名、結構等細節
+  > - Ver0.4 (2026/01/19): 新增資料夾多選功能，使用 Ookii.Dialogs.Wpf 套件支援；修正關鍵缺陷（Path/User 欄位、副本 INI、User Name 解析、MessageBox 反饋、確認對話框）
 
 - 名詞定義及說明
   1. **AnalysisTask 目錄**  
@@ -108,6 +110,9 @@
   - Service：FolderScanService / IniService / ProcessRunner / LogService
 - 執行緒：掃描/分析使用 `Task`，以 `IProgress` 或 `Dispatcher` 更新 UI
 - 資料繫結：`ObservableCollection` + `ICommand`（RelayCommand）
+- **NuGet 套件依賴**：
+  - `CommunityToolkit.Mvvm` v8.2.2+ - MVVM 框架支援
+  - `Ookii.Dialogs.Wpf` v5.0.1+ - 多選資料夾對話框
 
 ---
 
@@ -326,23 +331,24 @@ public enum TaskStatus
 ### 6.3 按鍵行為（互動細節）
 
 - **`btnSelectFolder`**
-  - 動作：開啟資料夾選取對話框（允許多選），掃描與解析選取的實驗資料夾，將結果填入 DataGrid；重算 N、重置進度為 0/0
+  - 動作：開啟資料夾選取對話框（**支援多選**），掃描與解析選取的實驗資料夾，將結果填入 DataGrid；重算 N、重置進度為 0/0
   - 執行流程：
-    1. 開啟資料夾對話框（起始目錄為上次選取位置，若無則為桌面；使用 FolderBrowserDialog 或 VistaFolderBrowserDialog）
+    1. 開啟資料夾對話框（**使用 Ookii.Dialogs.Wpf.VistaFolderBrowserDialog 支援多選**；起始目錄為上次選取位置，若無則為預設位置）
     2. 若選取被取消，無動作；若已選取，檢查是否需覆寫現有清單
     3. 若 Tasks 非空，呈現確認對話框："現有列表包含 {N} 個任務，是否清除？" (Yes / No / Cancel)
        - Yes：檢查是否有 Status=IniGenerated 的任務；若有，再次提示 "部分任務已生成 INI，是否同時刪除 INI 檔案？" (Yes / No)
          - Yes：遍歷 Tasks，將 Status=IniGenerated 的任務對應的 IniFilePath 檔案刪除（捕獲異常並記錄 WARN），再清空 Tasks
          - No：直接清空 Tasks，保留 INI 檔案
        - No / Cancel：中止此次操作，保留現有 Tasks
-    4. 執行後台掃描任務（TaskAsync）：遍歷選取的資料夾，解析每個資料夾（參照 5.3 欄位解析規則）
+    4. 執行後台掃描任務（TaskAsync）：遍歷**所有選取的資料夾**（支援多選），解析每個資料夾（參照 5.3 欄位解析規則）
     5. 掃描完畢，統計結果並更新 UI：
        - 若全成功：呈現 MessageBox "成功載入 {N} 個資料夾"，重置進度為 0/{N}，Tasks 狀態為 Pending
        - 若全失敗：呈現 MessageBox "無法解析任何選取的資料夾。詳見 Log。"，Tasks 為空
        - 若部分失敗：呈現 MessageBox "成功: {M}，失敗: {N-M}。詳見 Log。"，Tasks 包含成功與失敗的項目
   - 驗證/錯誤：選取失敗或解析失敗時記錄 ERROR/WARN 至 ProcessingLog，並呈現摘要 MessageBox
   - 可用性：IsBusy=true 時停用；執行期間禁用其他命令按鈕與路徑按鈕
-  - Log 記錄：`[INFO] 掃描資料夾開始: {資料夾數量}` → ... → `[INFO] 掃描完畢: {成功數}/{總數}`；每個失敗項目記錄 `[WARN/ERROR] 解析失敗: {資料夾路徑} - {原因}`
+  - Log 記錄：`[INFO] 已選取 {資料夾數量} 個資料夾` → `[INFO] 掃描資料夾開始` → ... → `[INFO] 掃描完畢: 成功 {M}，失敗 {N-M}，總計 {N} 個任務`；每個失敗項目記錄 `[WARN/ERROR] 解析失敗: {資料夾路徑} - {原因}`
+  - **技術實現**：使用 `Ookii.Dialogs.Wpf` NuGet 套件 (v5.0.1+) 提供的 `VistaFolderBrowserDialog`，設定 `Multiselect = true` 以啟用多選功能；透過 `SelectedPaths` 屬性取得所有選取的資料夾路徑陣列
 
 - **`btnGenIni`**
   - 前置條件：Tasks 中至少有一筆 Status=Pending 或 IniGenerated 的任務（**無需 AnalysisTaskPath 驗證**）

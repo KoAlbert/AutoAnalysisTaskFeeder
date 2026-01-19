@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "E:\\QuarkBio\\JobData\\21_AutoAnalysisTaskFeeder\\AutoAnalysisTaskFeeder\\AutoAnalysisTaskFeeder.csproj": {}
+    "e:\\QuarkBio\\JobData\\21_AutoAnalysisTaskFeeder\\AutoAnalysisTaskFeeder\\AutoAnalysisTaskFeeder.csproj": {}
   },
   "projects": {
-    "E:\\QuarkBio\\JobData\\21_AutoAnalysisTaskFeeder\\AutoAnalysisTaskFeeder\\AutoAnalysisTaskFeeder.csproj": {
+    "e:\\QuarkBio\\JobData\\21_AutoAnalysisTaskFeeder\\AutoAnalysisTaskFeeder\\AutoAnalysisTaskFeeder.csproj": {
       "version": "0.4.0",
       "restore": {
-        "projectUniqueName": "E:\\QuarkBio\\JobData\\21_AutoAnalysisTaskFeeder\\AutoAnalysisTaskFeeder\\AutoAnalysisTaskFeeder.csproj",
+        "projectUniqueName": "e:\\QuarkBio\\JobData\\21_AutoAnalysisTaskFeeder\\AutoAnalysisTaskFeeder\\AutoAnalysisTaskFeeder.csproj",
         "projectName": "AutoAnalysisTaskFeeder",
-        "projectPath": "E:\\QuarkBio\\JobData\\21_AutoAnalysisTaskFeeder\\AutoAnalysisTaskFeeder\\AutoAnalysisTaskFeeder.csproj",
+        "projectPath": "e:\\QuarkBio\\JobData\\21_AutoAnalysisTaskFeeder\\AutoAnalysisTaskFeeder\\AutoAnalysisTaskFeeder.csproj",
         "packagesPath": "C:\\Users\\alber\\.nuget\\packages\\",
-        "outputPath": "E:\\QuarkBio\\JobData\\21_AutoAnalysisTaskFeeder\\AutoAnalysisTaskFeeder\\obj\\",
+        "outputPath": "e:\\QuarkBio\\JobData\\21_AutoAnalysisTaskFeeder\\AutoAnalysisTaskFeeder\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
@@ -53,6 +53,10 @@
             "CommunityToolkit.Mvvm": {
               "target": "Package",
               "version": "[8.2.2, )"
+            },
+            "Ookii.Dialogs.Wpf": {
+              "target": "Package",
+              "version": "[5.0.1, )"
             }
           },
           "imports": [

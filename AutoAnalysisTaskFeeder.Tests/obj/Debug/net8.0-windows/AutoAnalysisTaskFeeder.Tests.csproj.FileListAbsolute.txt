@@ -104,3 +104,4 @@ E:\QuarkBio\JobData\21_AutoAnalysisTaskFeeder\AutoAnalysisTaskFeeder.Tests\obj\D
 E:\QuarkBio\JobData\21_AutoAnalysisTaskFeeder\AutoAnalysisTaskFeeder.Tests\obj\Debug\net8.0-windows\AutoAnalysisTaskFeeder.Tests.genruntimeconfig.cache
 E:\QuarkBio\JobData\21_AutoAnalysisTaskFeeder\AutoAnalysisTaskFeeder.Tests\obj\Debug\net8.0-windows\ref\AutoAnalysisTaskFeeder.Tests.dll
 E:\QuarkBio\JobData\21_AutoAnalysisTaskFeeder\AutoAnalysisTaskFeeder.Tests\obj\Debug\net8.0-windows\AutoAnalysisTaskFeeder.Tests.sourcelink.json
+E:\QuarkBio\JobData\21_AutoAnalysisTaskFeeder\AutoAnalysisTaskFeeder.Tests\bin\Debug\net8.0-windows\Ookii.Dialogs.Wpf.dll

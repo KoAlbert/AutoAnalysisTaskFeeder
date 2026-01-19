@@ -177,32 +177,34 @@ namespace AutoAnalysisTaskFeeder.ViewModels
                 }
 
                 IsBusy = true;
-                StatusMessage = "正在掃描資料夾...";
+                StatusMessage = "正在選取資料夾...";
                 _logService.LogInfo("開始選取資料夾");
 
-                // 使用 FolderBrowserDialog 選取資料夾
-                using var dialog = new System.Windows.Forms.FolderBrowserDialog
+                // 使用 Ookii.Dialogs.Wpf.VistaFolderBrowserDialog 支援多選
+                var dialog = new Ookii.Dialogs.Wpf.VistaFolderBrowserDialog
                 {
-                    Description = "請選取實驗資料夾",
-                    ShowNewFolderButton = false
+                    Description = "請選取實驗資料夾（可多選）",
+                    UseDescriptionForTitle = true,
+                    Multiselect = true
                 };
 
                 var result = dialog.ShowDialog();
-                if (result != System.Windows.Forms.DialogResult.OK || string.IsNullOrWhiteSpace(dialog.SelectedPath))
+                if (result != true || dialog.SelectedPaths == null || dialog.SelectedPaths.Length == 0)
                 {
                     StatusMessage = "已取消選取";
                     return;
                 }
 
-                var folderPath = dialog.SelectedPath;
-                _logService.LogInfo($"已選取資料夾: {folderPath}");
+                var selectedFolders = dialog.SelectedPaths;
+                _logService.LogInfo($"已選取 {selectedFolders.Length} 個資料夾");
 
                 Tasks.Clear();
                 TotalCount = 0;
                 ProcessedCount = 0;
                 ProgressValue = 0;
 
-                var scannedTasks = await _folderScanService.ScanFoldersAsync(new[] { folderPath });
+                StatusMessage = "正在掃描資料夾...";
+                var scannedTasks = await _folderScanService.ScanFoldersAsync(selectedFolders);
 
                 int successCount = 0;
                 int failCount = 0;
@@ -240,7 +242,7 @@ namespace AutoAnalysisTaskFeeder.ViewModels
                     failCount > 0 ? System.Windows.MessageBoxImage.Warning : System.Windows.MessageBoxImage.Information);
 
                 StatusMessage = $"掃描完畢，共 {TotalCount} 個任務";
-                _logService.LogInfo($"掃描完畢: {TotalCount} 個任務");
+                _logService.LogInfo($"掃描完畢: 成功 {successCount}，失敗 {failCount}，總計 {TotalCount} 個任務");
             }
             catch (Exception ex)
             {
