@@ -391,7 +391,8 @@ public enum TaskStatus
        - 記錄 Log `[INFO] 執行任務 {Item}/{TotalCount}: {FolderName}...`
        
        **4.2 啟動外部程式：**
-       - 呼叫 `Process.Start(PCRAnalysisExePath)` 啟動 QKBqPCRAnalysis.exe
+       - 呼叫 `Process.Start(PCRAnalysisExePath)` **以管理員權限**啟動 QKBqPCRAnalysis.exe（設定 `ProcessStartInfo.Verb = "runas"`）
+       - 若使用者拒絕 UAC 提示，記錄 ERROR Log，該任務標記為 Failed，繼續下一筆
        - 檢查程式啟動是否成功（若異常，記錄 ERROR Log，該任務標記為 Failed，繼續下一筆）
        - 記錄進程 ID 至 ProcessId
        - 記錄 Log `[INFO] 已啟動 QKBqPCRAnalysis.exe (PID={ProcessId})`
@@ -638,11 +639,11 @@ public enum TaskStatus
   - **不會自動退出**：完成分析並將 INI 移至 Complete 後，程式會持續運行，需由本程式手動終止進程
   - 基於 LabVIEW State Machine 架構，發生錯誤時會立即停止（ExitCode ≠ 0）
 - **檔案操作**：
-  - 本程式呼叫 `Process.Start(PCRAnalysisExePath)` 啟動程式
+  - 本程式呼叫 `Process.Start(PCRAnalysisExePath)` **以管理員權限**啟動程式（設定 `ProcessStartInfo.Verb = "runas"`）
   - 程式啟動後將自動監控 `AnalysisTask\New\` 目錄，並在新檔案出現時執行分析
   - 分析完成後將 INI 檔案移至 `Complete/`，約 3 分鐘後再移至 `History/`
   - **本程式必須在偵測到 Complete 有檔案後，立即呼叫 Process.Kill() 終止程式**
-- **權限需求**：讀取 + 執行
+- **權限需求**：讀取 + 執行 + **管理員權限**（UAC 提示）
 - **路徑支援**：同 AnalysisTaskPath
 
 ### 9.3 NewAnalysis.ini（產生的任務檔案）

@@ -14,7 +14,7 @@ namespace AutoAnalysisTaskFeeder.Services
         private Process _currentProcess;
 
         /// <summary>
-        /// 啟動外部程式
+        /// 啟動外部程式（以管理員權限執行）
         /// </summary>
         public int StartProcess(string exePath)
         {
@@ -26,7 +26,14 @@ namespace AutoAnalysisTaskFeeder.Services
 
             try
             {
-                _currentProcess = Process.Start(exePath);
+                var startInfo = new ProcessStartInfo
+                {
+                    FileName = exePath,
+                    UseShellExecute = true,
+                    Verb = "runas" // 以管理員身份執行
+                };
+
+                _currentProcess = Process.Start(startInfo);
                 return _currentProcess?.Id ?? -1;
             }
             catch (Exception ex)
