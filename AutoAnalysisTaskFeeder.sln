@@ -1,0 +1,29 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 18
+VisualStudioVersion = 18.1.11312.151 d18.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AutoAnalysisTaskFeeder", "AutoAnalysisTaskFeeder\AutoAnalysisTaskFeeder.csproj", "{C45B0660-2075-4CA0-A080-2345086AD4A3}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AutoAnalysisTaskFeeder.Tests", "AutoAnalysisTaskFeeder.Tests\AutoAnalysisTaskFeeder.Tests.csproj", "{E422619B-F6CC-4879-B645-F6624FF461E3}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{C45B0660-2075-4CA0-A080-2345086AD4A3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C45B0660-2075-4CA0-A080-2345086AD4A3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C45B0660-2075-4CA0-A080-2345086AD4A3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C45B0660-2075-4CA0-A080-2345086AD4A3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E422619B-F6CC-4879-B645-F6624FF461E3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E422619B-F6CC-4879-B645-F6624FF461E3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E422619B-F6CC-4879-B645-F6624FF461E3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E422619B-F6CC-4879-B645-F6624FF461E3}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensionAssemblyVersion) = postSolution
+	EndGlobalSection
+EndGlobal

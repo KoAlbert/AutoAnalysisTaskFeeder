@@ -1,0 +1,25 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk.WindowsDesktop">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <UseWPF>true</UseWPF>
+    <AssemblyName>AutoAnalysisTaskFeeder</AssemblyName>
+    <RootNamespace>AutoAnalysisTaskFeeder</RootNamespace>
+    <Version>0.4.0</Version>
+    <Authors>Albert Ke</Authors>
+    <Description>自動化解析實驗資料並啟動分析程式的 WPF 應用程式</Description>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.2.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="AutoAnalysisTaskFeeder\" />
+  </ItemGroup>
+
+</Project>

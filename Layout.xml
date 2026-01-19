@@ -1,0 +1,139 @@
+<Window x:Class="AutoAnalysisTaskFeeder.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        Title="AutoAnalysisTaskFeeder"
+        Width="980" Height="560"
+        d:DesignWidth="980" d:DesignHeight="560">
+
+    <!-- LAYOUT ROOT: 2 columns (Left Main, Right Log) + splitter -->
+    <Grid Margin="12">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="3*" MinWidth="520"/>
+            <ColumnDefinition Width="6" />
+            <ColumnDefinition Width="2*" MinWidth="260"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- LEFT PANE -->
+        <Grid Grid.Column="0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>  <!-- CommandBar -->
+                <RowDefinition Height="12"/>    <!-- spacing -->
+                <RowDefinition Height="*"/>     <!-- FolderGrid -->
+                <RowDefinition Height="14"/>    <!-- spacing -->
+                <RowDefinition Height="Auto"/>  <!-- ProgressPane -->
+                <RowDefinition Height="10"/>    <!-- spacing -->
+                <RowDefinition Height="Auto"/>  <!-- Status -->
+            </Grid.RowDefinitions>
+
+            <!-- REGION: CommandBar -->
+            <StackPanel Grid.Row="0" Orientation="Horizontal" HorizontalAlignment="Left">
+                <Button x:Name="btnSelectFolder"
+                        AutomationProperties.AutomationId="btnSelectFolder"
+                        Content="測試資料目錄選取"
+                        Padding="14,8" Margin="0,0,12,0"
+                        ToolTip="選擇要分析的測試資料根目錄（開啟資料夾對話框）"/>
+                <Button x:Name="btnGenIni"
+                        AutomationProperties.AutomationId="btnGenIni"
+                        Content="產生NewAnalysis.ini"
+                        Padding="14,8" Margin="0,0,12,0"
+                        ToolTip="依目前目錄列表產生 NewAnalysis.ini"/>
+                <Button x:Name="btnStart"
+                        AutomationProperties.AutomationId="btnStart"
+                        Content="啟動自動分析程式"
+                        Padding="14,8"
+                        ToolTip="開始批次分析；執行中會鎖定部分按鈕"/>
+            </StackPanel>
+
+            <!-- REGION: FolderGrid -->
+            <GroupBox Grid.Row="2" Header="目錄列表">
+                <DataGrid x:Name="gridFolders"
+                          AutomationProperties.AutomationId="gridFolders"
+                          AutoGenerateColumns="False"
+                          CanUserAddRows="False"
+                          CanUserDeleteRows="False"
+                          IsReadOnly="True"
+                          HeadersVisibility="Column"
+                          ToolTip="顯示待分析的資料夾清單與屬性">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Item" Binding="{Binding Item}" Width="60"/>
+                        <DataGridTextColumn Header="Folder Name" Binding="{Binding FolderName}" Width="*"/>
+                        <DataGridTextColumn Header="Machine" Binding="{Binding Machine}" Width="90"/>
+                        <DataGridTextColumn Header="APP" Binding="{Binding App}" Width="70"/>
+                        <DataGridTextColumn Header="Software Version" Binding="{Binding SoftwareVersion}" Width="120"/>
+                        <DataGridTextColumn Header="TotalCycle" Binding="{Binding TotalCycle}" Width="90"/>
+                        <DataGridTextColumn Header="TotalChip" Binding="{Binding TotalChip}" Width="90"/>
+                        <DataGridTextColumn Header="Filter" Binding="{Binding Filter}" Width="90"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </GroupBox>
+
+            <!-- REGION: ProgressPane -->
+            <Grid Grid.Row="4">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="160"/>
+                </Grid.ColumnDefinitions>
+
+                <ProgressBar x:Name="progressMain"
+                             Grid.Column="0"
+                             AutomationProperties.AutomationId="progressMain"
+                             Height="20"
+                             Minimum="0" Maximum="100"
+                             ToolTip="整體處理進度（0~100）"/>
+
+                <TextBlock x:Name="txtProgressLabel"
+                           Grid.Column="1"
+                           HorizontalAlignment="Left"
+                           VerticalAlignment="Center"
+                           Margin="12,0,0,0"
+                           Text="X/N"
+                           ToolTip="已完成/總數"/>
+            </Grid>
+
+            <!-- REGION: Status -->
+            <Border Grid.Row="6" Padding="8" Background="#F3F3F3" CornerRadius="4">
+                <TextBlock x:Name="txtStatus"
+                           AutomationProperties.AutomationId="txtStatus"
+                           Text="Ready"
+                           ToolTip="目前狀態：Ready / Running / Completed / Error"/>
+            </Border>
+        </Grid>
+
+        <!-- SPLITTER -->
+        <GridSplitter Grid.Column="1"
+                      Width="6"
+                      HorizontalAlignment="Stretch"
+                      VerticalAlignment="Stretch"
+                      ResizeBehavior="PreviousAndNext"
+                      ResizeDirection="Columns"
+                      ToolTip="拖曳調整目錄列表與Log寬度"/>
+
+        <!-- RIGHT LOG PANE -->
+        <Grid Grid.Column="2">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="10"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <Border Grid.Row="0" Padding="6" Background="#E6F3E6" CornerRadius="4">
+                <TextBlock Text="ProcessingLog"
+                           FontWeight="SemiBold"
+                           AutomationProperties.AutomationId="lblProcessingLog"/>
+            </Border>
+
+            <TextBox x:Name="txtLog"
+                     Grid.Row="2"
+                     AutomationProperties.AutomationId="txtLog"
+                     AcceptsReturn="True"
+                     TextWrapping="NoWrap"
+                     VerticalScrollBarVisibility="Auto"
+                     HorizontalScrollBarVisibility="Auto"
+                     IsReadOnly="True"
+                     ToolTip="處理紀錄（執行中持續追加）"/>
+        </Grid>
+    </Grid>
+</Window>

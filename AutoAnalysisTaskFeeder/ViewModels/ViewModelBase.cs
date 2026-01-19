@@ -1,0 +1,29 @@
+using System;
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
+
+namespace AutoAnalysisTaskFeeder.ViewModels
+{
+    /// <summary>
+    /// ViewModel 基類，實現 INotifyPropertyChanged
+    /// </summary>
+    public abstract class ViewModelBase : INotifyPropertyChanged
+    {
+        public event PropertyChangedEventHandler PropertyChanged;
+
+        protected void OnPropertyChanged([CallerMemberName] string propertyName = null)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+
+        protected bool SetProperty<T>(ref T field, T newValue, [CallerMemberName] string propertyName = null)
+        {
+            if (Equals(field, newValue))
+                return false;
+
+            field = newValue;
+            OnPropertyChanged(propertyName);
+            return true;
+        }
+    }
+}

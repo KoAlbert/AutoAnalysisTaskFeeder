@@ -1,0 +1,107 @@
+<Window x:Class="AutoAnalysisTaskFeeder.Views.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="AutoAnalysisTaskFeeder" Height="700" Width="1400"
+        WindowStartupLocation="CenterScreen"
+        Background="#F5F5F5">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="5"/>
+            <ColumnDefinition Width="300"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- Left Pane: Main Content -->
+        <StackPanel Grid.Column="0" Margin="10">
+            <!-- Command Buttons -->
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,10" Height="40">
+                <Button Content="選擇資料夾" Command="{Binding SelectFolderCommand}" 
+                        Margin="0,0,5,0" Padding="10" FontSize="12" Background="#007ACC" Foreground="White"/>
+                <Button Content="產生 INI" Command="{Binding GenerateIniCommand}" 
+                        Margin="5,0,5,0" Padding="10" FontSize="12" Background="#107C10" Foreground="White"/>
+                <Button Content="啟動分析" Command="{Binding StartAnalysisCommand}" 
+                        Margin="5,0,5,0" Padding="10" FontSize="12" Background="#D13438" Foreground="White"/>
+            </StackPanel>
+
+            <!-- Path Configuration -->
+            <GroupBox Header="路徑設定" Margin="0,0,0,10" Padding="10">
+                <StackPanel>
+                    <Grid Margin="0,0,0,10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        
+                        <Label Grid.Column="0" Content="分析任務路徑:" VerticalAlignment="Center"/>
+                        <TextBox Grid.Column="1" Text="{Binding AnalysisTaskPath, UpdateSourceTrigger=PropertyChanged}" 
+                                 Margin="5,0" Padding="5" IsReadOnly="False"/>
+                        <Button Grid.Column="2" Content="瀏覽..." Command="{Binding SelectAnalysisTaskPathCommand}" 
+                                Width="70" Margin="5,0"/>
+                    </Grid>
+
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        
+                        <Label Grid.Column="0" Content="PCR 分析程式:" VerticalAlignment="Center"/>
+                        <TextBox Grid.Column="1" Text="{Binding PcrAnalysisExePath, UpdateSourceTrigger=PropertyChanged}" 
+                                 Margin="5,0" Padding="5" IsReadOnly="False"/>
+                        <Button Grid.Column="2" Content="瀏覽..." Command="{Binding SelectPcrAnalysisPathCommand}" 
+                                Width="70" Margin="5,0"/>
+                    </Grid>
+                </StackPanel>
+            </GroupBox>
+
+            <!-- Task Grid -->
+            <GroupBox Header="{Binding TotalCount, StringFormat='任務清單 ({0} 項)'}" 
+                      Margin="0,0,0,10" Padding="10" MinHeight="300">
+                <DataGrid ItemsSource="{Binding Tasks}" AutoGenerateColumns="False" 
+                          IsReadOnly="True" GridLinesVisibility="All" BorderThickness="1" BorderBrush="#CCCCCC">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="序號" Binding="{Binding Item}" Width="50"/>
+                        <DataGridTextColumn Header="資料夾名稱" Binding="{Binding FolderName}" Width="150"/>
+                        <DataGridTextColumn Header="機器" Binding="{Binding Machine}" Width="80"/>
+                        <DataGridTextColumn Header="應用" Binding="{Binding App}" Width="100"/>
+                        <DataGridTextColumn Header="版本" Binding="{Binding SoftwareVersion}" Width="80"/>
+                        <DataGridTextColumn Header="循環" Binding="{Binding TotalCycle}" Width="50"/>
+                        <DataGridTextColumn Header="晶片" Binding="{Binding TotalChip}" Width="50"/>
+                        <DataGridTextColumn Header="篩選器" Binding="{Binding Filter}" Width="100"/>
+                        <DataGridTextColumn Header="狀態" Binding="{Binding Status}" Width="80"/>
+                        <DataGridTextColumn Header="錯誤" Binding="{Binding ErrorMessage}" Width="150"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </GroupBox>
+
+            <!-- Progress and Status -->
+            <StackPanel Margin="0,0,0,10">
+                <Label Content="進度" FontWeight="Bold" Margin="0,0,0,5"/>
+                <ProgressBar Value="{Binding ProgressValue}" Height="25" Background="#E0E0E0" Margin="0,0,0,5"/>
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="已處理: " VerticalAlignment="Center" Margin="0,0,5,0"/>
+                    <TextBlock Text="{Binding ProcessedCount}" VerticalAlignment="Center" Margin="0,0,5,0" FontWeight="Bold"/>
+                    <TextBlock Text="/ 總計: " VerticalAlignment="Center" Margin="0,0,5,0"/>
+                    <TextBlock Text="{Binding TotalCount}" VerticalAlignment="Center" FontWeight="Bold"/>
+                </StackPanel>
+            </StackPanel>
+
+            <!-- Status Message -->
+            <TextBlock Text="{Binding StatusMessage}" Foreground="#333333" FontSize="12" Margin="0,0,0,5"/>
+        </StackPanel>
+
+        <!-- GridSplitter -->
+        <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Stretch" Background="#CCCCCC"/>
+
+        <!-- Right Pane: Log -->
+        <GroupBox Grid.Column="2" Header="執行日誌" Margin="5" Padding="10">
+            <TextBox Text="{Binding LogText}" IsReadOnly="True" 
+                    VerticalScrollBarVisibility="Auto" 
+                    HorizontalScrollBarVisibility="Auto"
+                    FontFamily="Courier New" FontSize="10"
+                    Background="#1E1E1E" Foreground="#00FF00" Padding="5"/>
+        </GroupBox>
+    </Grid>
+</Window>
