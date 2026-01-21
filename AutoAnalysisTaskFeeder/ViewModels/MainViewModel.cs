@@ -149,45 +149,52 @@ namespace AutoAnalysisTaskFeeder.ViewModels
             await _executionLock.WaitAsync();
             try
             {
+                bool shouldClearTasks = false;
+                
                 // 檢查是否有現有任務，若有則提示確認
                 if (Tasks.Count > 0)
                 {
                     var confirmResult = System.Windows.MessageBox.Show(
-                        $"現有列表包含 {Tasks.Count} 個任務，是否清除？",
+                        $"現有列表包含 {Tasks.Count} 個任務。\n\n選擇「是」清除現有任務\n選擇「否」累加新任務到列表",
                         "確認",
-                        System.Windows.MessageBoxButton.YesNo,
+                        System.Windows.MessageBoxButton.YesNoCancel,
                         System.Windows.MessageBoxImage.Question);
 
-                    if (confirmResult == System.Windows.MessageBoxResult.No)
+                    if (confirmResult == System.Windows.MessageBoxResult.Cancel)
                     {
                         return;
                     }
+                    
+                    shouldClearTasks = (confirmResult == System.Windows.MessageBoxResult.Yes);
 
-                    // 檢查是否有已生成 INI 的任務
-                    var iniGeneratedTasks = Tasks.Where(t => t.Status == TaskStatusEnum.IniGenerated).ToList();
-                    if (iniGeneratedTasks.Count > 0)
+                    // 如果選擇清除，檢查是否有已生成 INI 的任務
+                    if (shouldClearTasks)
                     {
-                        var deleteIniResult = System.Windows.MessageBox.Show(
-                            "部分任務已生成 INI，是否同時刪除 INI 檔案？",
-                            "確認",
-                            System.Windows.MessageBoxButton.YesNo,
-                            System.Windows.MessageBoxImage.Question);
-
-                        if (deleteIniResult == System.Windows.MessageBoxResult.Yes)
+                        var iniGeneratedTasks = Tasks.Where(t => t.Status == TaskStatusEnum.IniGenerated).ToList();
+                        if (iniGeneratedTasks.Count > 0)
                         {
-                            foreach (var task in iniGeneratedTasks)
+                            var deleteIniResult = System.Windows.MessageBox.Show(
+                                "部分任務已生成 INI，是否同時刪除 INI 檔案？",
+                                "確認",
+                                System.Windows.MessageBoxButton.YesNo,
+                                System.Windows.MessageBoxImage.Question);
+
+                            if (deleteIniResult == System.Windows.MessageBoxResult.Yes)
                             {
-                                try
+                                foreach (var task in iniGeneratedTasks)
                                 {
-                                    if (!string.IsNullOrEmpty(task.IniFilePath) && File.Exists(task.IniFilePath))
+                                    try
                                     {
-                                        File.Delete(task.IniFilePath);
-                                        _logService.LogInfo($"已刪除 INI: {task.IniFilePath}");
+                                        if (!string.IsNullOrEmpty(task.IniFilePath) && File.Exists(task.IniFilePath))
+                                        {
+                                            File.Delete(task.IniFilePath);
+                                            _logService.LogInfo($"已刪除 INI: {task.IniFilePath}");
+                                        }
                                     }
-                                }
-                                catch (Exception ex)
-                                {
-                                    _logService.LogWarn($"刪除 INI 失敗: {task.IniFilePath} - {ex.Message}");
+                                    catch (Exception ex)
+                                    {
+                                        _logService.LogWarn($"刪除 INI 失敗: {task.IniFilePath} - {ex.Message}");
+                                    }
                                 }
                             }
                         }
@@ -234,19 +241,32 @@ namespace AutoAnalysisTaskFeeder.ViewModels
                     }
                 }
 
-                Tasks.Clear();
-                TotalCount = 0;
-                ProcessedCount = 0;
-                ProgressValue = 0;
+                // 只有在用戶選擇清除時才清空列表
+                if (shouldClearTasks)
+                {
+                    Tasks.Clear();
+                    TotalCount = 0;
+                    ProcessedCount = 0;
+                    ProgressValue = 0;
+                }
 
                 StatusMessage = "正在掃描資料夾...";
                 var scannedTasks = await _folderScanService.ScanFoldersAsync(selectedFolders);
 
                 int successCount = 0;
                 int failCount = 0;
+                
+                // 記錄當前任務數量，用於設定新任務的序號
+                int currentTaskCount = Tasks.Count;
 
                 foreach (var task in scannedTasks)
                 {
+                    // 如果是累加模式，調整序號
+                    if (!shouldClearTasks && currentTaskCount > 0)
+                    {
+                        task.Item = currentTaskCount + successCount + failCount + 1;
+                    }
+                    
                     Tasks.Add(task);
                     if (task.Status == TaskStatusEnum.Pending)
                         successCount++;
@@ -500,7 +520,7 @@ namespace AutoAnalysisTaskFeeder.ViewModels
                         {
                             task.Status = TaskStatusEnum.Completed;
                             task.CompletedTime = DateTime.Now;
-                            var elapsed = (task.CompletedTime - startTime).TotalSeconds;
+                            var elapsed = (task.CompletedTime.Value - startTime).TotalSeconds;
                             _logService.LogInfo($"任務完成: {task.FolderName} (耗時 {elapsed:F1}s)");
                             successCount++;
                             ProcessedCount++;

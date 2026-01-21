@@ -1,3 +1,4 @@
+using System;
 using System.Windows;
 using AutoAnalysisTaskFeeder.ViewModels;
 
@@ -9,7 +10,7 @@ namespace AutoAnalysisTaskFeeder.Views
         {
             InitializeComponent();
             // Get MainViewModel from App static instance
-            DataContext = App.MainViewModelInstance;
+            DataContext = App.MainViewModelInstance ?? throw new InvalidOperationException("MainViewModel¥¼ªì©l¤Æ");
         }
     }
 }

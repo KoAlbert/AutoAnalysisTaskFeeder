@@ -10,25 +10,25 @@ namespace AutoAnalysisTaskFeeder.Models
     public class TaskItem : INotifyPropertyChanged
     {
         private int _item;
-        private string _folderName;
-        private string _folderPath;
-        private string _machine;
-        private string _app;
-        private string _softwareVersion;
-        private string _userName;
+        private string _folderName = string.Empty;
+        private string _folderPath = string.Empty;
+        private string _machine = string.Empty;
+        private string _app = string.Empty;
+        private string _softwareVersion = string.Empty;
+        private string _userName = string.Empty;
         private int _totalCycle;
         private int _totalChip;
-        private string _filter;
+        private string _filter = string.Empty;
         
         // 內部狀態欄位
         private TaskStatus _status;
-        private string _errorMessage;
-        private string _iniFilePath;
-        private DateTime _generatedTime;
-        private DateTime _completedTime;
-        private int _processId;
+        private string? _errorMessage;
+        private string? _iniFilePath;
+        private DateTime? _generatedTime;
+        private DateTime? _completedTime;
+        private int? _processId;
 
-        public event PropertyChangedEventHandler PropertyChanged;
+        public event PropertyChangedEventHandler? PropertyChanged;
 
         // 顯示於 UI 的欄位
 
@@ -112,41 +112,41 @@ namespace AutoAnalysisTaskFeeder.Models
         }
 
         /// <summary>錯誤訊息</summary>
-        public string ErrorMessage
+        public string? ErrorMessage
         {
             get => _errorMessage;
             set => SetProperty(ref _errorMessage, value);
         }
 
         /// <summary>INI 檔案路徑</summary>
-        public string IniFilePath
+        public string? IniFilePath
         {
             get => _iniFilePath;
             set => SetProperty(ref _iniFilePath, value);
         }
 
         /// <summary>INI 產生時間</summary>
-        public DateTime GeneratedTime
+        public DateTime? GeneratedTime
         {
             get => _generatedTime;
             set => SetProperty(ref _generatedTime, value);
         }
 
         /// <summary>任務完成時間</summary>
-        public DateTime CompletedTime
+        public DateTime? CompletedTime
         {
             get => _completedTime;
             set => SetProperty(ref _completedTime, value);
         }
 
         /// <summary>外部程式進程 ID</summary>
-        public int ProcessId
+        public int? ProcessId
         {
             get => _processId;
             set => SetProperty(ref _processId, value);
         }
 
-        protected void SetProperty<T>(ref T field, T newValue, [CallerMemberName] string propertyName = null)
+        protected void SetProperty<T>(ref T field, T newValue, [CallerMemberName] string? propertyName = null)
         {
             if (!Equals(field, newValue))
             {
@@ -155,7 +155,7 @@ namespace AutoAnalysisTaskFeeder.Models
             }
         }
 
-        protected void OnPropertyChanged([CallerMemberName] string propertyName = null)
+        protected void OnPropertyChanged([CallerMemberName] string? propertyName = null)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }

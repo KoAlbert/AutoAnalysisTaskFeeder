@@ -14,7 +14,7 @@ namespace AutoAnalysisTaskFeeder.Services
         private readonly int _maxLines = 5000;
         private readonly int _trimLines = 500;
 
-        public event LogChangedEventHandler LogChanged;
+        public event LogChangedEventHandler? LogChanged;
 
         /// <summary>
         /// 記錄資訊級日誌

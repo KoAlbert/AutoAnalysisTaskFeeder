@@ -18,7 +18,7 @@ namespace AutoAnalysisTaskFeeder.Services
         /// <param name="onProgress">進度回調</param>
         /// <param name="cancellationToken">取消令牌</param>
         /// <returns>TaskItem 集合</returns>
-        Task<List<TaskItem>> ScanFoldersAsync(IEnumerable<string> folderPaths, IProgress<string> onProgress = null, CancellationToken cancellationToken = default);
+        Task<List<TaskItem>> ScanFoldersAsync(IEnumerable<string> folderPaths, IProgress<string>? onProgress = null, CancellationToken cancellationToken = default);
     }
 
     /// <summary>
@@ -45,7 +45,7 @@ namespace AutoAnalysisTaskFeeder.Services
         /// </summary>
         /// <param name="rawFilter">原始篩選器字串</param>
         /// <returns>標準化後的篩選器字串</returns>
-        string NormalizeFilter(string rawFilter);
+        string NormalizeFilter(string? rawFilter);
     }
 
     /// <summary>
@@ -75,7 +75,7 @@ namespace AutoAnalysisTaskFeeder.Services
         /// <param name="onProgress">進度回調</param>
         /// <param name="cancellationToken">取消令牌</param>
         /// <returns>true 表示成功完成，false 表示超時</returns>
-        Task<bool> MonitorCompletionAsync(string completeDir, int timeoutSeconds, IProgress<int> onProgress = null, CancellationToken cancellationToken = default);
+        Task<bool> MonitorCompletionAsync(string completeDir, int timeoutSeconds, IProgress<int>? onProgress = null, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// 終止進程

@@ -9,7 +9,7 @@ namespace AutoAnalysisTaskFeeder.Utilities
     public class RelayCommand : ICommand
     {
         private readonly Action _execute;
-        private readonly Func<bool> _canExecute;
+        private readonly Func<bool>? _canExecute;
 
         public event EventHandler? CanExecuteChanged
         {
@@ -40,7 +40,7 @@ namespace AutoAnalysisTaskFeeder.Utilities
     public class AsyncRelayCommand : ICommand
     {
         private readonly Func<System.Threading.Tasks.Task> _execute;
-        private readonly Func<bool> _canExecute;
+        private readonly Func<bool>? _canExecute;
         private bool _isExecuting;
 
         public event EventHandler? CanExecuteChanged
@@ -49,7 +49,7 @@ namespace AutoAnalysisTaskFeeder.Utilities
             remove { CommandManager.RequerySuggested -= value; }
         }
 
-        public AsyncRelayCommand(Func<System.Threading.Tasks.Task> execute, Func<bool> canExecute = null)
+        public AsyncRelayCommand(Func<System.Threading.Tasks.Task> execute, Func<bool>? canExecute = null)
         {
             _execute = execute ?? throw new ArgumentNullException(nameof(execute));
             _canExecute = canExecute;

@@ -30,7 +30,7 @@ namespace AutoAnalysisTaskFeeder.Services
         /// </summary>
         public async Task<List<TaskItem>> ScanFoldersAsync(
             IEnumerable<string> folderPaths,
-            IProgress<string> onProgress = null,
+            IProgress<string>? onProgress = null,
             CancellationToken cancellationToken = default)
         {
             var tasks = new List<TaskItem>();
@@ -72,7 +72,7 @@ namespace AutoAnalysisTaskFeeder.Services
         /// <summary>
         /// 掃描單一資料夾
         /// </summary>
-        private async Task<TaskItem> ScanSingleFolderAsync(string folderPath)
+        private async Task<TaskItem?> ScanSingleFolderAsync(string folderPath)
         {
             if (!Directory.Exists(folderPath))
             {
@@ -106,7 +106,7 @@ namespace AutoAnalysisTaskFeeder.Services
         /// <summary>
         /// 找尋最新的符合模式的檔案
         /// </summary>
-        private string FindLatestFile(string directory, string pattern)
+        private string? FindLatestFile(string directory, string pattern)
         {
             try
             {
@@ -191,7 +191,7 @@ namespace AutoAnalysisTaskFeeder.Services
 
                         if (task.TotalChip > 0 && filterArray[0].ValueKind == System.Text.Json.JsonValueKind.String)
                         {
-                            string rawFilter = filterArray[0].GetString();
+                            string? rawFilter = filterArray[0].GetString();
                             task.Filter = _iniService.NormalizeFilter(rawFilter);
                         }
                         else

@@ -47,8 +47,8 @@ namespace AutoAnalysisTaskFeeder.Services
             try
             {
                 // 確保目錄存在
-                string directory = Path.GetDirectoryName(filePath);
-                if (!Directory.Exists(directory))
+                string? directory = Path.GetDirectoryName(filePath);
+                if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
                     Directory.CreateDirectory(directory);
 
                 // 使用 UTF-8 編碼寫入（無 BOM）
@@ -63,7 +63,7 @@ namespace AutoAnalysisTaskFeeder.Services
         /// <summary>
         /// 標準化篩選器字串（移除尾端多餘冒號）
         /// </summary>
-        public string NormalizeFilter(string rawFilter)
+        public string NormalizeFilter(string? rawFilter)
         {
             if (string.IsNullOrEmpty(rawFilter))
                 return "";
@@ -79,7 +79,7 @@ namespace AutoAnalysisTaskFeeder.Services
             return result;
         }
 
-        private string GetSafeString(string value)
+        private string GetSafeString(string? value)
         {
             return string.IsNullOrWhiteSpace(value) ? "" : value;
         }

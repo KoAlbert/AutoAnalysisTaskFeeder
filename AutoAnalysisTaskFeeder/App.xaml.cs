@@ -6,7 +6,7 @@ namespace AutoAnalysisTaskFeeder
 {
     public partial class App : Application
     {
-        public static MainViewModel MainViewModelInstance { get; private set; }
+        public static MainViewModel? MainViewModelInstance { get; private set; }
 
         protected override void OnStartup(StartupEventArgs e)
         {

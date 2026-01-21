@@ -11,7 +11,7 @@ namespace AutoAnalysisTaskFeeder.Services
     /// </summary>
     public class ProcessRunner : IProcessRunner
     {
-        private Process _currentProcess;
+        private Process? _currentProcess;
 
         /// <summary>
         /// 啟動外部程式（繼承父程序的管理員權限）
@@ -67,7 +67,7 @@ namespace AutoAnalysisTaskFeeder.Services
         public async Task<bool> MonitorCompletionAsync(
             string completeDir,
             int timeoutSeconds,
-            IProgress<int> onProgress = null,
+            IProgress<int>? onProgress = null,
             CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrWhiteSpace(completeDir))

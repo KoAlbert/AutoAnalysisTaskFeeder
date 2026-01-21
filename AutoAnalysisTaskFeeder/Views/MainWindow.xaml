@@ -3,17 +3,20 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:utilities="clr-namespace:AutoAnalysisTaskFeeder.Utilities"
         Title="AutoAnalysisTaskFeeder" Height="700" Width="1400"
+        MinHeight="700" MaxHeight="700" MinWidth="1400" MaxWidth="1400"
         WindowStartupLocation="CenterScreen"
-        Background="#F5F5F5">
+        Background="#F5F5F5"
+        ResizeMode="CanMinimize">
     <Window.Resources>
         <utilities:InverseBooleanConverter x:Key="InverseBooleanConverter"/>
         
-        <!-- 停止按鈕樣式 - 確保禁用時仍顯示顏色和文字 -->
-        <Style x:Key="StopButtonStyle" TargetType="Button">
+        <!-- 通用按鈕樣式 - 按下時顏色變深，確保文字清晰可見 -->
+        <Style x:Key="ColoredButtonStyle" TargetType="Button">
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border Background="{TemplateBinding Background}"
+                        <Border x:Name="border"
+                                Background="{TemplateBinding Background}"
                                 BorderBrush="{TemplateBinding BorderBrush}"
                                 BorderThickness="{TemplateBinding BorderThickness}"
                                 Padding="{TemplateBinding Padding}"
@@ -27,6 +30,38 @@
                             <Trigger Property="IsMouseOver" Value="True">
                                 <Setter Property="Opacity" Value="0.9"/>
                             </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#333333"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        
+        <!-- 停止按鈕樣式 - 確保禁用時仍顯示顏色和文字 -->
+        <Style x:Key="StopButtonStyle" TargetType="Button">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                Padding="{TemplateBinding Padding}"
+                                CornerRadius="3">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.5"/>
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Opacity" Value="0.9"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#333333"/>
+                            </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
                 </Setter.Value>
@@ -35,9 +70,9 @@
     </Window.Resources>
     <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="920"/>
             <ColumnDefinition Width="5"/>
-            <ColumnDefinition Width="300"/>
+            <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
 
         <!-- Left Pane: Main Content -->
@@ -45,11 +80,14 @@
             <!-- Command Buttons -->
             <StackPanel Orientation="Horizontal" Margin="0,0,0,10" Height="40">
                 <Button Content="選擇資料夾" Command="{Binding SelectFolderCommand}" 
-                        Margin="0,0,5,0" Padding="10" FontSize="12" Background="#007ACC" Foreground="White"/>
+                        Margin="0,0,5,0" Padding="10" FontSize="12" Background="#007ACC" Foreground="White"
+                        Style="{StaticResource ColoredButtonStyle}"/>
                 <Button Content="產生 INI" Command="{Binding GenerateIniCommand}" 
-                        Margin="5,0,5,0" Padding="10" FontSize="12" Background="#107C10" Foreground="White"/>
+                        Margin="5,0,5,0" Padding="10" FontSize="12" Background="#107C10" Foreground="White"
+                        Style="{StaticResource ColoredButtonStyle}"/>
                 <Button Content="啟動分析" Command="{Binding StartAnalysisCommand}" 
                         Margin="5,0,5,0" Padding="10" FontSize="12" Background="#D13438" Foreground="White"
+                        Style="{StaticResource ColoredButtonStyle}"
                         IsEnabled="{Binding IsAnalysisRunning, Converter={StaticResource InverseBooleanConverter}}"/>
                 <Button Content="停止分析" Command="{Binding StopAnalysisCommand}" 
                         Margin="5,0,0,0" Padding="10" FontSize="12" 
@@ -72,7 +110,7 @@
                         <TextBox Grid.Column="1" Text="{Binding AnalysisTaskPath, UpdateSourceTrigger=PropertyChanged}" 
                                  Margin="5,0" Padding="5" IsReadOnly="False"/>
                         <Button Grid.Column="2" Content="瀏覽..." Command="{Binding SelectAnalysisTaskPathCommand}" 
-                                Width="70" Margin="5,0"/>
+                                Width="70" Margin="5,0" Style="{StaticResource ColoredButtonStyle}"/>
                     </Grid>
 
                     <Grid>
@@ -86,25 +124,26 @@
                         <TextBox Grid.Column="1" Text="{Binding PcrAnalysisExePath, UpdateSourceTrigger=PropertyChanged}" 
                                  Margin="5,0" Padding="5" IsReadOnly="False"/>
                         <Button Grid.Column="2" Content="瀏覽..." Command="{Binding SelectPcrAnalysisPathCommand}" 
-                                Width="70" Margin="5,0"/>
+                                Width="70" Margin="5,0" Style="{StaticResource ColoredButtonStyle}"/>
                     </Grid>
                 </StackPanel>
             </GroupBox>
 
             <!-- Task Grid -->
             <GroupBox Header="{Binding TotalCount, StringFormat='任務清單 ({0} 項)'}" 
-                      Margin="0,0,0,10" Padding="10" MinHeight="300">
+                      Margin="0,0,0,10" Padding="10" Height="300">
                 <DataGrid ItemsSource="{Binding Tasks}" AutoGenerateColumns="False" 
-                          IsReadOnly="True" GridLinesVisibility="All" BorderThickness="1" BorderBrush="#CCCCCC">
+                          IsReadOnly="True" GridLinesVisibility="All" BorderThickness="1" BorderBrush="#CCCCCC"
+                          HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
                     <DataGrid.Columns>
                         <DataGridTextColumn Header="序號" Binding="{Binding Item}" Width="50"/>
                         <DataGridTextColumn Header="資料夾名稱" Binding="{Binding FolderName}" Width="150"/>
                         <DataGridTextColumn Header="機器" Binding="{Binding Machine}" Width="80"/>
-                        <DataGridTextColumn Header="應用" Binding="{Binding App}" Width="100"/>
-                        <DataGridTextColumn Header="版本" Binding="{Binding SoftwareVersion}" Width="80"/>
+                        <DataGridTextColumn Header="APP名稱" Binding="{Binding App}" Width="100"/>
+                        <DataGridTextColumn Header="軟體版本" Binding="{Binding SoftwareVersion}" Width="80"/>
                         <DataGridTextColumn Header="循環" Binding="{Binding TotalCycle}" Width="50"/>
-                        <DataGridTextColumn Header="晶片" Binding="{Binding TotalChip}" Width="50"/>
-                        <DataGridTextColumn Header="篩選器" Binding="{Binding Filter}" Width="100"/>
+                        <DataGridTextColumn Header="晶片數" Binding="{Binding TotalChip}" Width="50"/>
+                        <DataGridTextColumn Header="濾鏡名稱" Binding="{Binding Filter}" Width="100"/>
                         <DataGridTextColumn Header="狀態" Binding="{Binding Status}" Width="80"/>
                         <DataGridTextColumn Header="錯誤" Binding="{Binding ErrorMessage}" Width="150"/>
                     </DataGrid.Columns>
