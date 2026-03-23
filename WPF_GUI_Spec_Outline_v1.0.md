@@ -2,14 +2,14 @@
 # AutoAnalysisTaskFeeder（WPF）規格書
 
 > 目的：建立自動化解析實驗資料後生成 Analysis 程式執行所需的 ini 檔案，並能自動啟動分析程式、監視分析結束狀態，持續匯入下一筆 ini 檔，直到所有實驗資料分析完成。  
-> 框架：.NET 6/8 + WPF + MVVM（CommunityToolkit.Mvvm）
+> 框架：.NET Framework 4.7.2 + WPF + MVVM（CommunityToolkit.Mvvm）
 
 ---
 
 ## 1. 文件資訊
 
-- **版本**：v1.0  
-- **日期**：2026/01/21  
+- **版本**：v1.1  
+- **日期**：2026/03/23  
 - **作者**：Albert Ke
 
 ### 1.1 名詞定義及說明
@@ -131,6 +131,8 @@ Filter=<篩選器，格式如 FAM::ROX: 或 FAM:HEX:ROX:CY5:>
 
 - `CommunityToolkit.Mvvm` v8.2.2+ - MVVM 框架支援
 - `Ookii.Dialogs.Wpf` v5.0.1+ - 多選資料夾對話框
+- `System.Text.Json` v8.0.5+ - JSON 序列化/反序列化（.NET Framework 4.7.2 需額外安裝）
+- `Microsoft.NETFramework.ReferenceAssemblies` v1.0.3 - .NET Framework 參考組件（建置用）
 
 ---
 
@@ -412,6 +414,7 @@ public enum TaskStatus
    - 構建 NewAnalysis.ini 內容
    - 寫入至實驗目錄根目錄：`{FolderPath}\NewAnalysis.ini`
    - 若寫入成功：
+     - **備份舊分析結果目錄**（詳見下方「備份規則」）
      - 更新 Status = IniGenerated
      - 記錄 IniFilePath = `{FolderPath}\NewAnalysis.ini`
      - 記錄 GeneratedTime = DateTime.Now
@@ -423,6 +426,21 @@ public enum TaskStatus
    - 全成功："已成功產生 {N} 份 INI"
    - 全失敗："無法產生任何 INI。詳見 Log。"
    - 部分失敗："成功: {M}，失敗: {N-M}。詳見 Log。"
+
+**備份規則（BackupExistingResultFolders）**：
+
+在每筆任務的 INI 產生成功後，立即檢查該實驗資料目錄內是否存在以下兩個目錄：
+- `AnalysisResult`
+- `Report`
+
+若存在，將其更名備份：
+- **更名格式**：`{原目錄名稱}_{yyyyMMddHHmm}`
+  - 範例：`AnalysisResult` → `AnalysisResult_202603231230`
+  - 範例：`Report` → `Report_202603231230`
+- **衝突處理**：若備份目標名稱已存在，自動加上遞增序號
+  - 範例：`AnalysisResult_202603231230_1`、`AnalysisResult_202603231230_2`
+- **錯誤處理**：備份失敗時記錄 WARN Log，不影響 INI 產生流程（不中斷）
+- **目的**：避免舊的分析結果與新的分析產生衝突，保留舊結果供事後查閱
 
 **可用性**：IsBusy=true 時停用
 
@@ -602,6 +620,9 @@ public enum TaskStatus
 [INFO] 開始產生 INI: 目標 {數量} 個任務
 [INFO] 正在產生 INI: {FolderName}
 [INFO] INI 已產生: {FolderPath}\NewAnalysis.ini
+[INFO] 已備份: AnalysisResult → AnalysisResult_{yyyyMMddHHmm}
+[INFO] 已備份: Report → Report_{yyyyMMddHHmm}
+[WARN] 備份失敗: {目錄名稱} → {備份名稱} - {原因}
 [ERROR] INI 產生失敗: {FolderPath} - {原因}
 [INFO] INI 產生完畢: 成功 {N}，失敗 {M}，耗時 {秒數}s
 ```
@@ -698,8 +719,8 @@ public enum TaskStatus
 ### 9.4 NewAnalysis.ini（產生的任務檔案）
 
 - **位置**：
-  - 副本：`{ExperimentFolderPath}\NewAnalysis.ini`（本程式保存，供監控與重試）
-  - 主檔：`{AnalysisTaskPath}\New\NewAnalysis.ini`（供外部程式讀取）
+  - 產生時：`{ExperimentFolderPath}\NewAnalysis.ini`（產生 INI 階段寫入實驗資料夾）
+  - 投遞時：啟動分析階段將上述檔案複製至 `{AnalysisTaskPath}\New\NewAnalysis.ini`（供外部程式讀取）
 - **編碼**：UTF-8（無 BOM）
 - **格式**（參照第 1 章）：
   ```ini

@@ -17,7 +17,7 @@ namespace AutoAnalysisTaskFeeder.Utilities
             remove { CommandManager.RequerySuggested -= value; }
         }
 
-        public RelayCommand(Action execute, Func<bool> canExecute = null)
+        public RelayCommand(Action execute, Func<bool>? canExecute = null)
         {
             _execute = execute ?? throw new ArgumentNullException(nameof(execute));
             _canExecute = canExecute;

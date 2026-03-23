@@ -19,12 +19,12 @@ namespace AutoAnalysisTaskFeeder.ViewModels
         private readonly IIniService _iniService;
         private readonly IProcessRunner _processRunner;
         private readonly ILogService _logService;
-        private readonly SemaphoreSlim _executionLock = new(1, 1);
+        private readonly SemaphoreSlim _executionLock = new SemaphoreSlim(1, 1);
         private readonly UserSettings _userSettings;
         private CancellationTokenSource? _cancellationTokenSource;
 
         // Properties
-        private ObservableCollection<TaskItem> _tasks = new();
+        private ObservableCollection<TaskItem> _tasks = new ObservableCollection<TaskItem>();
         public ObservableCollection<TaskItem> Tasks
         {
             get => _tasks;
@@ -349,19 +349,17 @@ namespace AutoAnalysisTaskFeeder.ViewModels
                     {
                         var iniContent = _iniService.GenerateIniContent(task);
                         
-                        // 1. 保存副本至實驗資料夾
-                        var backupPath = Path.Combine(task.FolderPath, "NewAnalysis.ini");
-                        _iniService.WriteIniFile(backupPath, iniContent);
-                        _logService.LogInfo($"INI 副本已保存: {backupPath}");
-                        
-                        // 2. 保存主檔至 AnalysisTask\New
-                        var mainPath = Path.Combine(AnalysisTaskPath, "New", "NewAnalysis.ini");
-                        _iniService.WriteIniFile(mainPath, iniContent);
-                        _logService.LogInfo($"INI 已產生: {mainPath}");
+                        // 1. 保存 INI 至實驗資料夾
+                        var iniPath = Path.Combine(task.FolderPath, "NewAnalysis.ini");
+                        _iniService.WriteIniFile(iniPath, iniContent);
+                        _logService.LogInfo($"INI 已產生: {iniPath}");
+
+                        // 2. 備份實驗資料夾內的 AnalysisResult 與 Report 目錄
+                        BackupExistingResultFolders(task.FolderPath);
 
                         // 3. 更新任務狀態
                         task.Status = TaskStatusEnum.IniGenerated;
-                        task.IniFilePath = mainPath;
+                        task.IniFilePath = iniPath;
                         task.GeneratedTime = DateTime.Now;
                         
                         successCount++;
@@ -648,6 +646,48 @@ namespace AutoAnalysisTaskFeeder.ViewModels
             }
         }
 
+        /// <summary>
+        /// 備份實驗資料夾內已存在的 AnalysisResult 與 Report 目錄
+        /// 更名格式：原名_yyyyMMddHHmm
+        /// </summary>
+        private void BackupExistingResultFolders(string folderPath)
+        {
+            string[] foldersToBackup = { "AnalysisResult", "Report" };
+            string timestamp = DateTime.Now.ToString("yyyyMMddHHmm");
+
+            foreach (var folderName in foldersToBackup)
+            {
+                string sourcePath = Path.Combine(folderPath, folderName);
+                if (Directory.Exists(sourcePath))
+                {
+                    string backupName = $"{folderName}_{timestamp}";
+                    string backupPath = Path.Combine(folderPath, backupName);
+
+                    // 若備份目標已存在，加上序號避免衝突
+                    if (Directory.Exists(backupPath))
+                    {
+                        int seq = 1;
+                        while (Directory.Exists($"{backupPath}_{seq}"))
+                        {
+                            seq++;
+                        }
+                        backupPath = $"{backupPath}_{seq}";
+                        backupName = $"{folderName}_{timestamp}_{seq}";
+                    }
+
+                    try
+                    {
+                        Directory.Move(sourcePath, backupPath);
+                        _logService.LogInfo($"已備份: {folderName} → {backupName}");
+                    }
+                    catch (Exception ex)
+                    {
+                        _logService.LogWarn($"備份失敗: {folderName} → {backupName} - {ex.Message}");
+                    }
+                }
+            }
+        }
+
         private void OnStopAnalysis()
         {
             if (_cancellationTokenSource != null && !_cancellationTokenSource.IsCancellationRequested)
@@ -671,30 +711,31 @@ namespace AutoAnalysisTaskFeeder.ViewModels
         {
             _logService.LogInfo("開始選擇 AnalysisTask 路徑");
 
-            using var dialog = new System.Windows.Forms.FolderBrowserDialog
+            using (var dialog = new System.Windows.Forms.FolderBrowserDialog
             {
                 Description = "請選擇 AnalysisTask 資料夾",
                 ShowNewFolderButton = true
-            };
+            })
+            {
+                if (!string.IsNullOrEmpty(AnalysisTaskPath) && Directory.Exists(AnalysisTaskPath))
+                {
+                    dialog.SelectedPath = AnalysisTaskPath;
+                }
 
-            if (!string.IsNullOrEmpty(AnalysisTaskPath) && Directory.Exists(AnalysisTaskPath))
-            {
-                dialog.SelectedPath = AnalysisTaskPath;
-            }
+                var result = dialog.ShowDialog();
+                if (result == System.Windows.Forms.DialogResult.OK)
+                {
+                    AnalysisTaskPath = dialog.SelectedPath;
+                    _logService.LogInfo($"已設定 AnalysisTask 路徑: {AnalysisTaskPath}");
 
-            var result = dialog.ShowDialog();
-            if (result == System.Windows.Forms.DialogResult.OK)
-            {
-                AnalysisTaskPath = dialog.SelectedPath;
-                _logService.LogInfo($"已設定 AnalysisTask 路徑: {AnalysisTaskPath}");
-                
-                // 儲存設定
-                _userSettings.LastAnalysisTaskPath = AnalysisTaskPath;
-                _userSettings.Save();
-            }
-            else
-            {
-                _logService.LogInfo("已取消選擇 AnalysisTask 路徑");
+                    // 儲存設定
+                    _userSettings.LastAnalysisTaskPath = AnalysisTaskPath;
+                    _userSettings.Save();
+                }
+                else
+                {
+                    _logService.LogInfo("已取消選擇 AnalysisTask 路徑");
+                }
             }
         }
 
@@ -702,32 +743,33 @@ namespace AutoAnalysisTaskFeeder.ViewModels
         {
             _logService.LogInfo("開始選擇 PCR 分析程式");
 
-            using var dialog = new System.Windows.Forms.OpenFileDialog
+            using (var dialog = new System.Windows.Forms.OpenFileDialog
             {
                 Title = "請選擇 QKBqPCRAnalysis.exe",
                 Filter = "執行檔 (*.exe)|*.exe|所有檔案 (*.*)|*.*",
                 CheckFileExists = true
-            };
+            })
+            {
+                if (!string.IsNullOrEmpty(PcrAnalysisExePath) && File.Exists(PcrAnalysisExePath))
+                {
+                    dialog.InitialDirectory = Path.GetDirectoryName(PcrAnalysisExePath);
+                    dialog.FileName = Path.GetFileName(PcrAnalysisExePath);
+                }
 
-            if (!string.IsNullOrEmpty(PcrAnalysisExePath) && File.Exists(PcrAnalysisExePath))
-            {
-                dialog.InitialDirectory = Path.GetDirectoryName(PcrAnalysisExePath);
-                dialog.FileName = Path.GetFileName(PcrAnalysisExePath);
-            }
+                var result = dialog.ShowDialog();
+                if (result == System.Windows.Forms.DialogResult.OK)
+                {
+                    PcrAnalysisExePath = dialog.FileName;
+                    _logService.LogInfo($"已設定 PCR 分析程式路徑: {PcrAnalysisExePath}");
 
-            var result = dialog.ShowDialog();
-            if (result == System.Windows.Forms.DialogResult.OK)
-            {
-                PcrAnalysisExePath = dialog.FileName;
-                _logService.LogInfo($"已設定 PCR 分析程式路徑: {PcrAnalysisExePath}");
-                
-                // 儲存設定
-                _userSettings.LastPcrAnalysisExePath = PcrAnalysisExePath;
-                _userSettings.Save();
-            }
-            else
-            {
-                _logService.LogInfo("已取消選擇 PCR 分析程式");
+                    // 儲存設定
+                    _userSettings.LastPcrAnalysisExePath = PcrAnalysisExePath;
+                    _userSettings.Save();
+                }
+                else
+                {
+                    _logService.LogInfo("已取消選擇 PCR 分析程式");
+                }
             }
         }
     }

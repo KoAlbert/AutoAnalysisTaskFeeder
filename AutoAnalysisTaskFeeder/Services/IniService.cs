@@ -48,8 +48,8 @@ namespace AutoAnalysisTaskFeeder.Services
             {
                 // 確保目錄存在
                 string? directory = Path.GetDirectoryName(filePath);
-                if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
-                    Directory.CreateDirectory(directory);
+                if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory!))
+                    Directory.CreateDirectory(directory!);
 
                 // 使用 UTF-8 編碼寫入（無 BOM）
                 File.WriteAllText(filePath, content, new UTF8Encoding(false));
@@ -68,7 +68,7 @@ namespace AutoAnalysisTaskFeeder.Services
             if (string.IsNullOrEmpty(rawFilter))
                 return "";
 
-            string result = rawFilter.TrimEnd();
+            string result = rawFilter!.TrimEnd();
 
             // 移除尾端連續的冒號，保留最後一個
             while (result.EndsWith("::"))
@@ -81,7 +81,7 @@ namespace AutoAnalysisTaskFeeder.Services
 
         private string GetSafeString(string? value)
         {
-            return string.IsNullOrWhiteSpace(value) ? "" : value;
+            return string.IsNullOrWhiteSpace(value) ? "" : value!;
         }
     }
 }

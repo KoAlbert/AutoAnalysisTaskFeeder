@@ -126,8 +126,21 @@ namespace AutoAnalysisTaskFeeder.Services
                     process.Kill();
                     if (!process.WaitForExit(timeoutMs))
                     {
-                        // 強制終止（若上面的 Kill 無效）
-                        process.Kill(true);
+                        // 強制終止（若上面的 Kill 無效，透過 taskkill 強制結束子程序）
+                        try
+                        {
+                            using (var taskkill = Process.Start(new ProcessStartInfo
+                            {
+                                FileName = "taskkill",
+                                Arguments = $"/F /T /PID {processId}",
+                                UseShellExecute = false,
+                                CreateNoWindow = true
+                            }))
+                            {
+                                taskkill?.WaitForExit(5000);
+                            }
+                        }
+                        catch { /* 忽略 taskkill 失敗 */ }
                     }
                 }
             }
